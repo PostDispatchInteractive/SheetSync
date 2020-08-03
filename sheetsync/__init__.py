@@ -13,7 +13,7 @@
     :license: MIT, see LICENSE.txt for more details.
 """
 
-from version import __version__
+from .version import __version__
 
 import logging
 import httplib2 # pip install httplib2
@@ -62,7 +62,7 @@ def ia_credentials_helper(client_id, client_secret,
 
     """
     def _load_credentials(key):
-        with open(credentials_cache_file, 'rb') as inf:
+        with open(credentials_cache_file, 'r') as inf:
             cache = json.load(inf)
         cred_json = cache[key]
         return OAuth2Credentials.from_json(cred_json)
@@ -70,12 +70,12 @@ def ia_credentials_helper(client_id, client_secret,
     def _save_credentials(key, credentials):
         cache = {}
         try:
-            with open(credentials_cache_file, 'rb') as inf:
+            with open(credentials_cache_file, 'r') as inf:
                 cache = json.load(inf)
-        except (IOError, ValueError), e:
+        except (IOError, ValueError) as e:
             pass
         cache[key] = credentials.to_json()
-        with open(credentials_cache_file, 'wb') as ouf:
+        with open(credentials_cache_file, 'w') as ouf:
             json.dump(cache, ouf)
 
     credentials_key = "%s/%s/%s" % (client_id, client_secret, cache_key)
@@ -87,7 +87,7 @@ def ia_credentials_helper(client_id, client_secret,
     except (IOError, 
             ValueError, 
             KeyError, 
-            AccessTokenRefreshError), e:
+            AccessTokenRefreshError) as e:
         # Check https://developers.google.com/drive/scopes for all available scopes
         OAUTH_SCOPE = ('https://www.googleapis.com/auth/drive '+
                        'https://spreadsheets.google.com/feeds')
@@ -99,7 +99,7 @@ def ia_credentials_helper(client_id, client_secret,
                                    redirect_uri=REDIRECT_URI)
         authorize_url = flow.step1_get_authorize_url()
         print('Go to the following link in your browser:\n' + authorize_url)
-        code = raw_input('Enter verification code: ').strip()
+        code = input('Enter verification code: ').strip()
         credentials = flow.step2_exchange(code)
 
     _save_credentials(credentials_key, credentials)
@@ -434,7 +434,7 @@ class Sheet(object):
                 logger.info("Not found. Creating worksheet '%s'", self.worksheet_name)
                 self._worksheet = self.sheet.add_worksheet(title=self.worksheet_name, 
                                                            rows=20, cols=10)
-        except Exception, e:
+        except Exception as e:
             logger.exception("Failed to find or create worksheet: %s. %s", 
                                                       self.worksheet_name, e)
             raise e
@@ -484,10 +484,10 @@ class Sheet(object):
         if source_doc is not None:
             logger.info("Copying spreadsheet.")
             try:
-                print body
-                print source_doc['id']
+                print (body)
+                print (source_doc['id'])
                 new_document = drive_service.files().copy(fileId=source_doc['id'], body=body).execute()
-            except Exception, e:
+            except Exception as e:
                 logger.exception("gdata API error. %s", e)
                 raise e
 
@@ -497,7 +497,7 @@ class Sheet(object):
             body['mimeType'] = 'application/vnd.google-apps.spreadsheet'
             try:
                 new_document = drive_service.files().insert(body=body).execute()
-            except Exception, e:
+            except Exception as e:
                 logger.exception("gdata API error. %s", e)
                 raise e
 
@@ -513,7 +513,7 @@ class Sheet(object):
         if folder_key is not None:
             try:
                 folder_rsrc = drive_service.files().get(fileId=folder_key).execute()
-            except apiclient.errors.HttpError, e:
+            except apiclient.errors.HttpError as e:
                 # XXX: WRONG... probably returns 404 if not found,.. which is not an error.
                 logger.exception("Google API error: %s", e)
                 raise e
@@ -537,7 +537,7 @@ class Sheet(object):
                 return items[0]
             elif len(items) > 1:
                 raise KeyError("%s folders found named: %s" % (len(items), folder_name))
-        except Exception, e:
+        except Exception as e:
             logger.exception("Google API error. %s", e)
             raise e
 
@@ -546,7 +546,7 @@ class Sheet(object):
             new_folder_rsrc = drive_service.files().insert(
                 body={ 'mimeType' : 'application/vnd.google-apps.folder',
                        'title' : folder_name }).execute()
-        except Exception, e:
+        except Exception as e:
             logger.exception("Google API error. %s", e)
             raise e
 
@@ -561,7 +561,7 @@ class Sheet(object):
             logger.debug("Finding document by key.")
             try:
                 doc_rsrc = drive_service.files().get(fileId=doc_key).execute()
-            except Exception, e:
+            except Exception as e:
                 logger.exception("gdata API error. %s", e)
                 raise e
 
@@ -579,7 +579,7 @@ class Sheet(object):
                         doc_name.replace("'","\\'")
                         ).execute()
             matches = name_query['items']
-        except Exception, e:
+        except Exception as e:
             logger.exception("gdata API error. %s", e)
             raise e
 
@@ -605,7 +605,7 @@ class Sheet(object):
         if new_rows or new_cols:
             try:
                 self.worksheet.resize(rows=new_rows, cols=new_cols)
-            except Exception, e:
+            except Exception as e:
                 logger.exception("Error resizing worksheet. %s", e)
                 raise e
 
@@ -631,7 +631,7 @@ class Sheet(object):
                                         len(self._batch_request))
             try:
                 self.worksheet.update_cells(self._batch_request)
-            except Exception, e:
+            except Exception as e:
                 logger.exception("gdata API error. %s", e)
                 raise e
 
@@ -680,7 +680,7 @@ class Sheet(object):
             # Bit of a hack to rip out Gspread's xml parsing.
             cfeed = [gspread.Cell(self, elem) for elem in
                                         feed.findall(gspread.client._ns('entry'))]
-        except Exception, e:
+        except Exception as e:
             logger.exception("gspread error. %s", e)
             raise e
 
@@ -756,7 +756,7 @@ class Sheet(object):
         drive_service = self.drive_service
         try:
             source_rsrc = drive_service.files().get(fileId=self.document_key).execute()
-        except Exception, e:
+        except Exception as e:
             logger.exception("Google API error. %s", e)
             raise e
 
